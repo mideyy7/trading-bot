@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trading Bot Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="terminal">
+        <h1>Trading Bot Dashboard</h1>
+        <div id="status">[STATUS] STARTING</div>
+        <div id="price">[PRICE] $0.00</div>
+        <div id="position">[POSITION] FLAT</div>
+        <div id="pnl">[TOTAL PnL] $0.00</div>
+        <div id="trades"></div>
+    </div>
+
+    <script>
+        const evtSource = new EventSource("/trades/stream");
+
+        evtSource.onmessage = function(event) {
+            const trade = JSON.parse(event.data);
+
+            // Update trades
+            const tradesDiv = document.getElementById("trades");
+            const tradeDiv = document.createElement("div");
+            tradeDiv.classList.add("trade");
+            tradeDiv.classList.add(trade.action);
+
+            tradeDiv.innerHTML = `[${trade.time}] ${trade.action} @ $${parseFloat(trade.price).toFixed(2)}`;
+            if (trade.action === "SELL" && trade.pnl !== undefined) {
+                tradeDiv.innerHTML += ` | PnL: ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}`;
+            }
+
+            tradesDiv.prepend(tradeDiv);
+
+            // Update status
+            document.getElementById("status").textContent = `[STATUS] RUNNING`;
+            document.getElementById("price").textContent = `[PRICE] $${trade.price}`;
+            document.getElementById("position").textContent = `[POSITION] ${trade.position === 1 ? "LONG" : "FLAT"}`;
+            document.getElementById("pnl").textContent = `[TOTAL PnL] $${trade.total_pnl.toFixed(2)}`;
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+body {
+    background-color: #000;
+    color: #0f0;
+    font-family: monospace;
+    padding: 20px;
+}
+
+.terminal h1 {
+    color: #0f0;
+    margin-bottom: 20px;
+}
+
+.trade {
+    padding: 5px 0;
+}
+
+.trade.BUY {
+    color: #0f0; /* green */
+}
+
+.trade.SELL {
+    color: #f00; /* red */
+}
+
+#status { color: #0ff; } /* cyan */
+#price { color: #0f0; }  /* green */
+#position { color: #ff0; } /* yellow */
+#pnl { color: #0f0; }    /* green */
