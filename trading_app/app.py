@@ -1,7 +1,3 @@
-# =============================================================================
-# app.py - Fixed to show C++ trades on web dashboard
-# =============================================================================
-
 import asyncio
 import json
 from contextlib import asynccontextmanager
@@ -26,7 +22,6 @@ from scraper import stream_binance
 
 app = FastAPI()
 
-# CORS for local development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,10 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
-# Shared state
-# -----------------------------
-trades_history = []             # All trades (both signals sent and C++ confirmations)
+trades_history = []           
 system_status = {
     "status": "STARTING",
     "position": 0,
@@ -46,36 +38,23 @@ system_status = {
     "current_price": 0.0,
     "total_trades": 0
 }
-
-# -----------------------------
-# ZMQ setup
-# -----------------------------
+# ZMQ Set-up
 ctx = zmq.asyncio.Context()
 
 # Send signals to C++
 cpp_sender = ctx.socket(zmq.PUSH)
 cpp_sender.connect("tcp://localhost:5555")
 
-# Receive confirmations FROM C++ (NEW!)
+# Receive confirmations FROM C++
 cpp_receiver = ctx.socket(zmq.PULL)
 cpp_receiver.bind("tcp://*:5556")  # C++ will send confirmations here
 
-# -----------------------------
-# Listen for C++ confirmations
-# -----------------------------
+
 async def cpp_confirmation_listener():
-    """
-    Listen for trade confirmations from C++ execution engine
-    This is what displays trades on the web!
-    """
-    print("🎧 Listening for C++ trade confirmations on port 5556...")
-    
     while True:
         try:
-            # Wait for message from C++
             msg = await cpp_receiver.recv_json()
-            
-            print(f"📥 Received from C++: {msg}")
+            print(f"Received from C++: {msg}")
             
             # Add to trade history
             trade_record = {
@@ -95,22 +74,14 @@ async def cpp_confirmation_listener():
             if msg.get("total_pnl") is not None:
                 system_status["pnl"] = msg["total_pnl"]
             
-            print(f"✅ Trade added to dashboard: {trade_record}")
+            print(f"Trade added to dashboard: {trade_record}")
             
         except Exception as e:
-            print(f"❌ Error in C++ listener: {e}")
+            print(f"Error in C++ listener: {e}")
             await asyncio.sleep(1)
 
-# -----------------------------
-# Background strategy runner
-# -----------------------------
-async def strategy_runner():
-    """
-    Run strategy and send signals to C++
-    """
-    print("🚀 Starting strategy runner...")
-    
-    strategy = MovingAverageStrategy(3, 8)  # Aggressive for testing
+async def strategy_runner():    
+    strategy = MovingAverageStrategy(2, 50)  
     execution = ExecutionEngine()
     engine = TradingEngine(strategy, execution)
 
@@ -166,7 +137,7 @@ async def send_to_cpp(message):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("\n" + "="*70)
-    print("🌐 STARTING WEB DASHBOARD")
+    print("STARTING WEB DASHBOARD")
     print("="*70)
     
     tasks = [
@@ -181,7 +152,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        print("\n🛑 Shutting down...")
+        print("\nshutting down...")
         for t in tasks:
             t.cancel()
 
@@ -222,7 +193,7 @@ async def cpp_confirmation_listener():
             await web_update_queue.put(msg) 
             
         except Exception as e:
-            print(f"❌ Error in C++ listener: {e}")
+            print(f"Error in C++ listener: {e}")
             await asyncio.sleep(1)
 
 # NEW: Add the SSE route that index.html is looking for
