@@ -110,12 +110,6 @@ async def strategy_runner():
 
     execution.on_signal = patched_on_signal
 
-    # Update current price
-    async def update_price_wrapper(tick):
-        system_status["current_price"] = tick.price
-        system_status["status"] = "RUNNING"
-        await engine.on_tick(tick)
-    
     # Run Binance streaming
     await stream_binance("btcusdt", engine)
 
