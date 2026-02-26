@@ -3,10 +3,6 @@ import numpy as np
 from datetime import datetime, timedelta
 
 def generate_sample_prices(num_days=200, starting_price=42000):
-    """
-    Generate realistic-looking price data with trends and volatility
-    """
-    
     dates = []
     prices = []
     
@@ -45,18 +41,6 @@ def generate_sample_prices(num_days=200, starting_price=42000):
     return df
 
 if __name__ == "__main__":
-    # Generate 200 days of price data
     df = generate_sample_prices(num_days=200, starting_price=42000)
-    
-    # Save to CSV
     df.to_csv("prices.csv", index=False)
-    
-    print("✅ Sample price data generated!")
-    print(f"📁 File: prices.csv")
-    print(f"📊 Days: {len(df)}")
-    print(f"💰 Starting price: ${df['price'].iloc[0]:,.2f}")
-    print(f"💰 Ending price: ${df['price'].iloc[-1]:,.2f}")
-    print(f"\nFirst 5 rows:")
-    print(df.head())
-    print(f"\nLast 5 rows:")
-    print(df.tail())
+    print("Sample price data generated!")
