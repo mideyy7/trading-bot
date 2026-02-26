@@ -1,11 +1,10 @@
 from models import Signal, Tick
-from datetime import datetime
 import zmq
 
 class ExecutionEngine:
     def __init__(self):
         self.position = 0
-        self.entry_price = None
+        self.entry_price: float | None = None
         self.total_pnl = 0.0
         self.pnl_pct = 0.0
         # self.trades = []
@@ -22,6 +21,7 @@ class ExecutionEngine:
                 'price': tick.price
             }
         elif signal == Signal.SELL and self.position == 1:
+            assert self.entry_price is not None
             pnl = tick.price - self.entry_price
             self.total_pnl += pnl
             self.pnl_pct = (pnl / self.entry_price) * 100
