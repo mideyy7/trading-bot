@@ -1,7 +1,6 @@
 from models import Signal, Tick
 from datetime import datetime
 import zmq
-import json
 
 class ExecutionEngine:
     def __init__(self):
@@ -40,8 +39,4 @@ class ExecutionEngine:
             socket.connect("tcp://localhost:5555")
             socket.send_json(trade)
 
-        # print("=" * 60)
-        # print("Working")
-        # print(self.trades)
-
-       
+        return trade

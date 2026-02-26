@@ -3,10 +3,7 @@ import json
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi.responses import StreamingResponse # Add this import
-import asyncio
-
-
+from fastapi.responses import StreamingResponse
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -55,7 +52,7 @@ async def cpp_confirmation_listener():
         try:
             msg = await cpp_receiver.recv_json()
             print(f"Received from C++: {msg}")
-            
+
             # Add to trade history
             trade_record = {
                 "time": msg.get("time", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
@@ -64,18 +61,21 @@ async def cpp_confirmation_listener():
                 "pnl": msg.get("pnl", 0.0),
                 "source": "C++"
             }
-            
+
             trades_history.append(trade_record)
-            
+
             # Update system status
             system_status["total_trades"] = len(trades_history)
             if msg.get("position") is not None:
                 system_status["position"] = msg["position"]
             if msg.get("total_pnl") is not None:
                 system_status["pnl"] = msg["total_pnl"]
-            
+
             print(f"Trade added to dashboard: {trade_record}")
-            
+
+            # Push to SSE queue for live dashboard updates
+            await web_update_queue.put(msg)
+
         except Exception as e:
             print(f"Error in C++ listener: {e}")
             await asyncio.sleep(1)
@@ -117,12 +117,7 @@ async def strategy_runner():
         await engine.on_tick(tick)
     
     # Run Binance streaming
-    try:
-        from scraper import stream_binance_with_callback
-        await stream_binance_with_callback("btcusdt", update_price_wrapper)
-    except ImportError:
-        # Fallback if scraper doesn't have callback version
-        await stream_binance("btcusdt", engine)
+    await stream_binance("btcusdt", engine)
 
 async def send_to_cpp(message):
     """Send message to C++ engine"""
@@ -179,24 +174,9 @@ async def get_status():
     """Return system status"""
     return JSONResponse(content=system_status)
 
-# Create a queue to hold updates for the web dashboard
+# Queue to hold updates for the SSE stream
 web_update_queue = asyncio.Queue()
 
-# ... inside cpp_confirmation_listener ...
-async def cpp_confirmation_listener():
-    while True:
-        try:
-            msg = await cpp_receiver.recv_json()
-            # ... your existing logic to update trades_history ...
-            
-            # NEW: Push the update to the queue for the web dashboard
-            await web_update_queue.put(msg) 
-            
-        except Exception as e:
-            print(f"Error in C++ listener: {e}")
-            await asyncio.sleep(1)
-
-# NEW: Add the SSE route that index.html is looking for
 @app.get("/trades/stream")
 async def trade_stream():
     async def event_generator():
